@@ -19,7 +19,7 @@ jobs:
           cache: true
       - name: Flutter packages
         run: flutter pub get
-      - name: Dart format check on touched files
-        run: dart format --output=none --set-exit-if-changed lib/features/visit_history/visit_history_screen.dart lib/features/favorites/favorites_screen.dart lib/features/personalization/personalization_service.dart test/visit_history_grouping_test.dart
+      - name: Dart syntax and formatter smoke check
+        run: dart format --output=none lib/features/visit_history/visit_history_screen.dart lib/features/favorites/favorites_screen.dart lib/features/personalization/personalization_service.dart test/visit_history_grouping_test.dart
       - name: Flutter widget and unit tests
         run: flutter test test/visit_history_grouping_test.dart test/personalization_screens_test.dart

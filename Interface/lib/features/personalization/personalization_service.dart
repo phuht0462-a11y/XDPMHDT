@@ -137,12 +137,21 @@ class PersonalizationService {
       await _writeCache(userId, 'favorites', remote);
       final merged = await _applyPendingFavoriteOps(userId, remote);
       await _writeCache(userId, 'favorites', merged);
-      return PersonalizationListResult(items: merged, fromCache: false);
+      final pending = await _readOutbox(userId, 'favorites');
+      return PersonalizationListResult(
+        items: merged,
+        fromCache: false,
+        warning: pending.isNotEmpty
+            ? 'Có thay đổi Yêu thích đang chờ đồng bộ.'
+            : null,
+      );
     } catch (_) {
       return PersonalizationListResult(
         items: await _readCache(userId, 'favorites'),
         fromCache: true,
-        warning: 'Đang hiển thị dữ liệu đã lưu trên thiết bị; không kết nối được máy chủ.',
+        warning: (await _readOutbox(userId, 'favorites')).isNotEmpty
+            ? 'Đang ngoại tuyến – sẽ đồng bộ sau. Hiển thị Yêu thích đã lưu.'
+            : 'Không kết nối được máy chủ. Đang hiển thị Yêu thích đã lưu.',
       );
     }
   }
@@ -372,12 +381,18 @@ class PersonalizationService {
       }
       merged.sort((a, b) => (b['detectedAt']?.toString() ?? '').compareTo(a['detectedAt']?.toString() ?? ''));
       await _writeCache(userId, 'history', merged);
-      return PersonalizationListResult(items: merged, fromCache: false, warning: pending.isNotEmpty ? 'Một số lượt xem vẫn đang chờ đồng bộ.' : null);
+      return PersonalizationListResult(
+        items: merged,
+        fromCache: false,
+        warning: pending.isNotEmpty ? 'Đang ngoại tuyến – sẽ đồng bộ sau.' : null,
+      );
     } catch (_) {
       return PersonalizationListResult(
         items: await _readCache(userId, 'history'),
         fromCache: true,
-        warning: 'Đang xem lịch sử đã lưu trên thiết bị; các lượt xem mới sẽ được đồng bộ khi có mạng.',
+        warning: (await _readOutbox(userId, 'visits')).isNotEmpty
+            ? 'Đang ngoại tuyến – sẽ đồng bộ sau. Hiển thị lịch sử đã lưu.'
+            : 'Không kết nối được máy chủ. Đang hiển thị lịch sử đã lưu.',
       );
     }
   }

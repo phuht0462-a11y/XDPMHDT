@@ -87,19 +87,26 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       return;
     }
 
+    // Optimistic UI: remove immediately; restore the list on a server error.
+    final previous = List<Map<String, dynamic>>.from(_items);
+    setState(() => _items.removeWhere((row) => _artifactId(row) == id));
+
     try {
       final result = await PersonalizationService.removeFavorite(id);
-
       if (!mounted) return;
 
+      if (!result.success) {
+        setState(() => _items = previous);
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(result.message)),
       );
-
-      await _load(showLoader: false);
+      if (result.success) {
+        await _load(showLoader: false);
+      }
     } catch (error) {
       if (!mounted) return;
-
+      setState(() => _items = previous);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(

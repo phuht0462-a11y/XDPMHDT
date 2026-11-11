@@ -8,6 +8,15 @@ const _cream = Color(0xFFF7F5EF);
 const _sage = Color(0xFF718B78);
 const _ink = Color(0xFF26352B);
 
+/// Nhãn nhóm theo ngày địa phương; xử lý cả lịch sử đồng bộ và bản ghi offline.
+String visitDayLabel(Map<String, dynamic> item) {
+  final raw = (item['detectedAt'] ?? item['visitedAt'] ?? '').toString();
+  final date = DateTime.tryParse(raw)?.toLocal();
+  if (date == null) return 'Không rõ ngày';
+  String two(int number) => number.toString().padLeft(2, '0');
+  return 'Ngày ${two(date.day)}/${two(date.month)}/${date.year}';
+}
+
 /// Màn hình lịch sử tham quan.
 /// Hỗ trợ dữ liệu cache, làm mới và mở chi tiết hiện vật.
 class VisitHistoryScreen extends StatefulWidget {
@@ -218,7 +227,13 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
                         ),
                       )
                     else
-                      ..._items.map((item) {
+                      ..._items.asMap().entries.map((entry) {
+                        final item = entry.value;
+                        final day = visitDayLabel(item);
+                        final previousDay = entry.key == 0
+                            ? null
+                            : visitDayLabel(_items[entry.key - 1]);
+                        final showDayHeader = day != previousDay;
                         final rawId =
                             item['artifactId'] ?? item['artifact_id'];
 
@@ -264,7 +279,22 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
                           _string(item, 'image'),
                         );
 
-                        return Card(
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (showDayHeader)
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(4, 14, 0, 10),
+                                child: Text(
+                                  day,
+                                  style: const TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.bold,
+                                    color: _ink,
+                                  ),
+                                ),
+                              ),
+                            Card(
                           elevation: 0,
                           color: Colors.white,
                           margin: const EdgeInsets.only(bottom: 12),
@@ -367,6 +397,7 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
                               ),
                             ),
                           ),
+                          ],
                         );
                       }),
                   ],

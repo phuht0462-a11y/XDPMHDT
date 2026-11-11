@@ -397,6 +397,7 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
                               ),
                             ),
                           ),
+                            ),
                           ],
                         );
                       }),

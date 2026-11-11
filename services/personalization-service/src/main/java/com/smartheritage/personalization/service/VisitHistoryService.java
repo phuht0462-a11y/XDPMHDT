@@ -8,6 +8,7 @@ import com.smartheritage.personalization.dto.SyncVisitsResponse;
 import com.smartheritage.personalization.dto.VisitHistoryResponse;
 import com.smartheritage.personalization.entity.VisitHistory;
 import com.smartheritage.personalization.repository.VisitHistoryRepository;
+import com.smartheritage.personalization.event.VisitEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +30,7 @@ import java.util.Set;
 public class VisitHistoryService {
     private final VisitHistoryRepository visitHistoryRepository;
     private final ArtifactClient artifactClient;
+    private final VisitEventPublisher visitEvents;
 
     @Transactional(readOnly = true)
     public Page<VisitHistoryResponse> list(Long userId, Pageable pageable) {
@@ -40,8 +43,11 @@ public class VisitHistoryService {
         if (visitHistoryRepository.existsByUserIdAndClientEventId(userId, request.getClientEventId())) {
             return false;
         }
-        artifactClient.requireActive(request.getArtifactId());
-        visitHistoryRepository.save(toEntity(userId, request));
+        ArtifactSnapshot artifact = artifactClient.requireActive(request.getArtifactId());
+        VisitHistory visit = toEntity(userId, request);
+        visitHistoryRepository.saveAndFlush(visit);
+        // VisitEventPublisher relies on common EventPublisher: no send if transaction rolls back.
+        visitEvents.publishRecorded(visit, artifact == null ? null : artifact.siteId());
         return true;
     }
 
@@ -66,14 +72,18 @@ public class VisitHistoryService {
             toCreate.add(request);
         }
 
-        // Kiểm tra mọi hiện vật trước khi ghi để batch không bị ghi dở dang.
+        // Validate all artifacts before saving to preserve all-or-nothing batch behavior.
+        Map<Long, Long> siteIds = new HashMap<>();
         for (Long artifactId : toCreate.stream().map(RecordVisitRequest::getArtifactId).distinct().toList()) {
-            artifactClient.requireActive(artifactId);
+            ArtifactSnapshot artifact = artifactClient.requireActive(artifactId);
+            siteIds.put(artifactId, artifact == null ? null : artifact.siteId());
         }
 
         List<VisitHistory> rows = toCreate.stream().map(r -> toEntity(userId, r)).toList();
-        visitHistoryRepository.saveAll(rows);
-        visitHistoryRepository.flush();
+        visitHistoryRepository.saveAllAndFlush(rows);
+        for (VisitHistory visit : rows) {
+            visitEvents.publishRecorded(visit, siteIds.get(visit.getArtifactId()));
+        }
         return new SyncVisitsResponse(events.size(), rows.size(), duplicates);
     }
 

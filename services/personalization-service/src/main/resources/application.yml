@@ -18,6 +18,19 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:smartheritage}
+    password: ${SPRING_RABBITMQ_PASSWORD:change-me-rabbit}
+    connection-timeout: 2s
+    listener:
+      simple:
+        default-requeue-rejected: false
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1s
 
 app:
   clients:
@@ -33,6 +46,10 @@ springdoc:
     path: /swagger-ui.html
 
 management:
+  # No RabbitMQ outage should make the visit API itself unhealthy.
+  health:
+    rabbit:
+      enabled: false
   endpoints:
     web:
       exposure:

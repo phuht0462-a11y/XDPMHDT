@@ -30,7 +30,7 @@ class VisitHistoryService {
   + list(userId, pageable)
   + record(userId, req) : boolean
   + sync(userId, events) : SyncVisitsResponse
-  + listForAdmin(from, to, pageable)
+  + listForAdmin(from, to, siteId, pageable)
 }
 class FavoriteService {
   + list(userId, pageable)

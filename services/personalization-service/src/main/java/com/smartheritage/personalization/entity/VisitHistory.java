@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
@@ -17,7 +18,7 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "visits", uniqueConstraints = @UniqueConstraint(
+@Table(name = "visits", indexes = @Index(name = "idx_visits_user_detected", columnList = "user_id, detected_at"), uniqueConstraints = @UniqueConstraint(
         name = "uq_visits_user_event", columnNames = {"user_id", "client_event_id"}))
 @Getter
 @Setter

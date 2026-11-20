@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS visits (
     PRIMARY KEY (id),
     UNIQUE KEY uq_visits_user_event (user_id, client_event_id),
     KEY idx_visits_artifact (artifact_id),
+    KEY idx_visits_user_detected (user_id, detected_at),
     CONSTRAINT chk_visits_duration CHECK (duration_seconds IS NULL OR duration_seconds >= 0)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 

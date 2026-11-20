@@ -1,0 +1,89 @@
+{
+  "command": "mvn -pl services/personalization-service -am test",
+  "java": "Temurin 17.0.21.1+2",
+  "maven": "3.9.11",
+  "runner_note": "Mockito 5.17.0 loaded via -javaagent at JVM startup; no source/test assertion bypass",
+  "suites": [
+    {
+      "module": "common",
+      "name": "com.smartheritage.common.events.EventPublisherTest",
+      "tests": "12",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "1.002"
+    },
+    {
+      "module": "common",
+      "name": "com.smartheritage.common.events.EventsConfigTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.091"
+    },
+    {
+      "module": "common",
+      "name": "com.smartheritage.common.security.JwtServiceTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.345"
+    },
+    {
+      "module": "personalization-service",
+      "name": "com.smartheritage.personalization.client.ArtifactClientFallbackTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "1.353"
+    },
+    {
+      "module": "personalization-service",
+      "name": "com.smartheritage.personalization.event.ArtifactUpdatedListenerTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.008"
+    },
+    {
+      "module": "personalization-service",
+      "name": "com.smartheritage.personalization.event.VisitEventPublisherTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.049"
+    },
+    {
+      "module": "personalization-service",
+      "name": "com.smartheritage.personalization.service.FavoriteServiceTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.004"
+    },
+    {
+      "module": "personalization-service",
+      "name": "com.smartheritage.personalization.service.PersonalDataFallbackTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.199"
+    },
+    {
+      "module": "personalization-service",
+      "name": "com.smartheritage.personalization.service.VisitHistoryServiceTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.045"
+    }
+  ]
+}

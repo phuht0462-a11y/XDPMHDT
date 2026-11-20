@@ -67,3 +67,14 @@ $env:BEACON_SERVICE_URL = "http://localhost:8084"
 RabbitMQ: http://localhost:15672. Cần có analytics-service nhận `visit.recorded` để kiểm tra đếm realtime.
 Trong RabbitMQ UI, xem queue của analytics, không chỉ exchange (exchange topic không tự giữ tin).
 Lưu ý: `publishAfterCommit` không lưu producer outbox để gửi lại khi broker mất kết nối; cần phối hợp Bảo nếu muốn bảo đảm không mất tin.
+
+## Tuần 7 — ổn định personalization
+
+- Outbox Flutter lưu thao tác trước khi gửi; giữ `clientEventId` khi retry, đồng bộ khi mở lại app/đăng nhập và định kỳ lúc app ở foreground.
+- Khi Content hoặc Redis lỗi, danh sách cá nhân vẫn giữ bản ghi; thiếu metadata hiển thị `Hiện vật #id`. Thêm mới vẫn cần xác minh hiện vật hợp lệ.
+- Chỉ mục lịch sử: `(user_id, detected_at)`. DB đang có dữ liệu dùng `Infra/personalization_w7_indexes.sql`; không xóa volume.
+- [Yêu cầu, kiến trúc và câu hỏi bảo vệ](../../Docs/requirements/personalization-w7.md).
+- [Kết quả kiểm thử, số đo và các bước nghiệm thu còn lại](../../Docs/testing/personalization-w7.md).
+- [Hướng dẫn thao tác offline](../../Docs/testing/personalization-w7.md#thao-tác-trên-app).
+
+Flutter/device chưa được nghiệm thu trên bản thay đổi này. Xem trạng thái từng hạng mục trong báo cáo; không dùng kết quả backend thay cho kiểm thử app.

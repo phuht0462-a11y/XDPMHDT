@@ -1,0 +1,60 @@
+{
+  "timestamp_utc": "2026-11-20T05:06:50.220932+00:00",
+  "scope": "Real MySQL + Spring Boot + Gateway; HTTP Content fixture; Redis/RabbitMQ absent",
+  "checks": [
+    {
+      "name": "OpenAPI available through Gateway",
+      "status": "PASS"
+    },
+    {
+      "name": "Swagger UI served through Gateway",
+      "status": "PASS"
+    },
+    {
+      "name": "Prometheus endpoint available",
+      "status": "PASS"
+    },
+    {
+      "name": "Gateway requires JWT",
+      "status": "PASS"
+    },
+    {
+      "name": "Redis unavailable: two favorites, repeated add does not duplicate",
+      "status": "PASS"
+    },
+    {
+      "name": "Replay after discarded response creates no additional visits",
+      "status": "PASS"
+    },
+    {
+      "name": "Exactly three original event IDs retained",
+      "status": "PASS"
+    },
+    {
+      "name": "JWT account isolation",
+      "status": "PASS"
+    },
+    {
+      "name": "Content and Redis unavailable: existing favorites still readable",
+      "status": "PASS"
+    },
+    {
+      "name": "Content and Redis unavailable: visits still readable",
+      "status": "PASS"
+    },
+    {
+      "name": "Content unavailable: new write remains retryable, not falsely accepted",
+      "status": "PASS"
+    },
+    {
+      "name": "Removing an existing favorite does not need Content or Redis",
+      "status": "PASS"
+    },
+    {
+      "name": "Index migration creates both columns and runs twice without error",
+      "status": "PASS"
+    }
+  ],
+  "mysql_version": "8.0.46",
+  "status": "PASS"
+}

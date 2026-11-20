@@ -18,6 +18,7 @@ entity visits {
   duration_seconds
   client_event_id
   <<UQ (user_id, client_event_id)>>
+  <<INDEX (user_id, detected_at)>>
 }
 entity likes {
   * user_id <<PK>>

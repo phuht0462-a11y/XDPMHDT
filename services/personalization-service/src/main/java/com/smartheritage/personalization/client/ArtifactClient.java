@@ -73,16 +73,27 @@ public class ArtifactClient {
         }
     }
 
-    /** Giữ thứ tự id và bỏ qua hiện vật đã bị xóa; lỗi kết nối vẫn trả 503 để app dùng cache offline. */
+    /** Metadata is optional for existing personal records; writes still require an active artifact. */
     public Map<Long, ArtifactSnapshot> getMany(Collection<Long> artifactIds) {
         Set<Long> unique = new LinkedHashSet<>(artifactIds);
         Map<Long, ArtifactSnapshot> result = new LinkedHashMap<>();
+        boolean contentUnavailable = false;
         for (Long id : unique) {
             if (id == null) continue;
+            if (contentUnavailable) {
+                ArtifactSnapshot cached = readCache(id);
+                if (cached != null) result.put(id, cached);
+                continue;
+            }
             try {
                 result.put(id, get(id));
             } catch (ApiException ex) {
-                if (ex.getStatus() != HttpStatus.NOT_FOUND) throw ex;
+                if (ex.getStatus() == HttpStatus.SERVICE_UNAVAILABLE) {
+                    // Avoid one content timeout per row; retain DB records with placeholder metadata.
+                    contentUnavailable = true;
+                } else if (ex.getStatus() != HttpStatus.NOT_FOUND) {
+                    throw ex;
+                }
             }
         }
         return result;

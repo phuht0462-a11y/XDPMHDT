@@ -1,0 +1,125 @@
+{
+  "measured_at_utc": "2026-11-20T05:01:17.722750+00:00",
+  "mysql_version": "8.0.46",
+  "client_platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "total_rows_and_target_user_rows": "300000\t200000",
+  "samples_per_query": 20,
+  "metric": "EXPLAIN ANALYZE root iterator end time, milliseconds; warm cache",
+  "queries": {
+    "page": "SELECT * FROM visits WHERE user_id = 1 ORDER BY detected_at DESC LIMIT 20",
+    "count": "SELECT COUNT(*) FROM visits WHERE user_id = 1"
+  },
+  "before": {
+    "page": {
+      "samples_ms": [
+        280.0,
+        354.0,
+        302.0,
+        411.0,
+        536.0,
+        457.0,
+        328.0,
+        317.0,
+        403.0,
+        309.0,
+        409.0,
+        525.0,
+        413.0,
+        422.0,
+        426.0,
+        348.0,
+        352.0,
+        446.0,
+        507.0,
+        495.0
+      ],
+      "median_ms": 410.0,
+      "p95_ms": 525.0,
+      "plan": "-> Limit: 20 row(s)  (cost=16334 rows=20) (actual time=495..495 rows=20 loops=1)\n    -> Sort: visits.detected_at DESC, limit input to 20 row(s) per chunk  (cost=16334 rows=149145) (actual time=495..495 rows=20 loops=1)\n        -> Index lookup on visits using uq_visits_user_event (user_id=1)  (cost=16334 rows=149145) (actual time=1.28..457 rows=200000 loops=1)"
+    },
+    "count": {
+      "samples_ms": [
+        44.8,
+        47.0,
+        48.5,
+        51.3,
+        68.7,
+        57.0,
+        53.0,
+        47.2,
+        56.2,
+        44.1,
+        48.1,
+        52.3,
+        45.6,
+        53.1,
+        51.3,
+        74.8,
+        82.2,
+        79.0,
+        46.1,
+        54.1
+      ],
+      "median_ms": 51.8,
+      "p95_ms": 79.0,
+      "plan": "-> Aggregate: count(0)  (cost=30560 rows=1) (actual time=54.1..54.1 rows=1 loops=1)\n    -> Covering index lookup on visits using uq_visits_user_event (user_id=1)  (cost=15646 rows=149145) (actual time=1.02..45.6 rows=200000 loops=1)"
+    }
+  },
+  "after": {
+    "page": {
+      "samples_ms": [
+        0.925,
+        0.818,
+        1.32,
+        0.868,
+        0.889,
+        0.993,
+        2.16,
+        0.917,
+        0.965,
+        0.981,
+        1.1,
+        1.08,
+        0.964,
+        0.83,
+        1.21,
+        0.827,
+        1.01,
+        0.841,
+        0.825,
+        0.802
+      ],
+      "median_ms": 0.9445,
+      "p95_ms": 1.32,
+      "plan": "-> Limit: 20 row(s)  (cost=16334 rows=20) (actual time=0.797..0.802 rows=20 loops=1)\n    -> Index lookup on visits using idx_visits_user_detected (user_id=1) (reverse)  (cost=16334 rows=149145) (actual time=0.797..0.801 rows=20 loops=1)"
+    },
+    "count": {
+      "samples_ms": [
+        39.1,
+        40.2,
+        37.7,
+        38.1,
+        41.6,
+        41.8,
+        42.5,
+        40.0,
+        39.6,
+        38.4,
+        40.4,
+        38.0,
+        38.2,
+        37.6,
+        38.1,
+        36.8,
+        37.9,
+        39.7,
+        38.9,
+        41.1
+      ],
+      "median_ms": 39.0,
+      "p95_ms": 41.8,
+      "plan": "-> Aggregate: count(0)  (cost=30211 rows=1) (actual time=41.1..41.1 rows=1 loops=1)\n    -> Covering index lookup on visits using idx_visits_user_detected (user_id=1)  (cost=15297 rows=149145) (actual time=0.675..32.7 rows=200000 loops=1)"
+    }
+  },
+  "same_page_before_after": true
+}

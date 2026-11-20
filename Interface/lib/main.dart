@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'features/personalization/personalization_service.dart';
+import 'features/personalization/personalization_sync.dart';
 import 'package:http/http.dart' as http;
 import 'core/network/auth_http_client.dart';
 import 'features/auth/auth_service.dart';
@@ -39,7 +40,7 @@ void main() {
     AuthService.currentUser.addListener(
       () => unawaited(DeviceRegistrationService.I.ensureRegistered()),
     );
-    runApp(const SmartHeritageApp());
+    runApp(const PersonalizationSync(child: SmartHeritageApp()));
   }, () => AuthHttpClient(inner));
 }
 

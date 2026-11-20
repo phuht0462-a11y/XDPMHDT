@@ -1,54 +1,34 @@
 @startuml
 skinparam defaultFontName "DejaVu Sans"
-skinparam defaultFontSize 12
 skinparam monochrome true
 skinparam shadowing false
-skinparam roundcorner 0
-skinparam linetype ortho
-skinparam classAttributeIconSize 0
 skinparam sequenceMessageAlign left
-skinparam ArrowColor #000000
-title Sequence – Ghi lượt tham quan và đồng bộ khi mất mạng
-participant "App\n(PersonalizationService)" as A
-participant "api-gateway" as G
-participant "VisitHistoryController" as C
-participant "VisitHistoryService" as S
-participant "ArtifactClient" as AC
-database "Redis" as R
-participant "content-service" as CS
+title Personalization W7 – Lưu trước khi gửi và thử lại
+participant "Flutter\nPersonalizationService" as App
+database "SharedPreferences\nTheo tài khoản" as Local
+participant "Gateway / Personalization" as API
 database "personalization_db" as DB
-participant "VisitEventPublisher" as P
-queue "sh.events" as MQ
-
-A -> A : rời vùng beacon → tạo sự kiện {clientEventId (UUID), artifactId, detectedAt, durationSeconds}
-alt có mạng
-  A -> G : POST /api/me/visits (Bearer)
-else mất mạng
-  A -> A : lưu hàng đợi trên máy
-  ... khi có mạng lại ...
-  A -> G : POST /api/me/visits/batch (≤ 100 sự kiện)
+queue "RabbitMQ" as MQ
+App -> Local : lưu UUID + thời điểm + outbox trước HTTP
+App -> Local : cập nhật lịch sử hiển thị
+App -> API : POST /api/me/visits/batch (Bearer, tối đa 100)
+API -> API : kiểm tra hiện vật ACTIVE qua cache / Content
+API -> DB : giao dịch: bỏ qua (user_id, client_event_id) đã có
+DB --> API : commit bản ghi mới
+API -> MQ : visit.recorded sau commit, chỉ cho lượt mới
+alt nhận phản hồi thành công
+  API --> App : received, created, duplicates
+  App -> Local : cập nhật lịch sử, xóa mục đã xác nhận
+else mất phản hồi hoặc mất mạng
+  App -> Local : giữ nguyên outbox và UUID
+  ... foreground mỗi 30 giây / resume / đăng nhập ...
+  App -> API : gửi lại cùng UUID
+  API -> DB : phát hiện trùng, không INSERT lại
+  API --> App : thành công, duplicates tăng
+  App -> Local : xóa mục đã xác nhận
 end
-G -> C : X-User-Id
-C -> S : record() / sync()  [@Transactional, all-or-nothing]
-loop mỗi sự kiện
-  S -> DB : existsByUserIdAndClientEventId?
-  alt đã có (gửi lặp)
-    S -> S : bỏ qua (idempotent)
-  else
-    S -> AC : requireActive(artifactId)
-    AC -> R : GET artifact:summary:{id}
-    alt cache trống
-      AC -> CS : GET /api/artifacts/{id}
-      AC -> R : SET artifact:summary:{id} (TTL)
-    end
-    alt hiện vật không ACTIVE
-      S --> A : 400, rollback cả lô
-    end
-    S -> DB : INSERT visits
-    S -> P : publishRecorded(visit)
-  end
-end
-S --> A : 200 {received, created, duplicates}
-P -> MQ : "visit.recorded" (chỉ gửi sau commit)
-MQ -> MQ : analytics-service cộng lượt xem
+note over API,MQ
+Broker hỏng: publishAfterCommit hiện chưa có producer outbox.
+Không tuyên bố bảo đảm sự kiện Analytics không mất khi broker ngừng.
+end note
 @enduml

@@ -1,0 +1,32 @@
+name: XDPMHDT-99 Flutter verification
+on:
+  push:
+    branches: ["ci/XDPMHDT-99-flutter-verification"]
+permissions:
+  contents: read
+jobs:
+  flutter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: Interface
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: 63e3590fb3d67a865e25e568cae0573c8d9b6956
+          persist-credentials: false
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          channel: stable
+          flutter-version: "3.50.0"
+          cache: true
+      - name: Resolve dependencies
+        id: deps
+        run: flutter pub get
+      - name: Personalization regression tests
+        if: ${{ success() && steps.deps.outcome == 'success' }}
+        run: flutter test test/features/personalization/personalization_offline_test.dart test/visit_history_grouping_test.dart test/personalization_screens_test.dart
+      - name: Analyze application
+        if: ${{ always() && steps.deps.outcome == 'success' }}
+        run: flutter analyze

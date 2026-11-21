@@ -39,21 +39,30 @@ class PersonalizationActionResult {
 class PersonalizationService {
   PersonalizationService._();
 
-  static Future<void> _tail = Future<void>.value();
+  static Future<void>? _tail;
   static Future<void>? _syncing;
 
   // Capture the account at invocation, not after waiting for another operation.
   // A rejected operation must not poison the queue for subsequent operations.
   static Future<T> _serial<T>(Future<T> Function() operation) {
     final account = _userId;
-    final result = _tail.then((_) async {
-      if (_userId != account) throw StateError('Phiên đăng nhập đã thay đổi.');
-      final value = await operation();
-      if (_userId != account) throw StateError('Phiên đăng nhập đã thay đổi.');
-      return value;
-    });
-    _tail = result.then<void>((_) {}, onError: (Object _, StackTrace __) {});
-    return result;
+    final previous = _tail;
+    final done = Completer<void>();
+    _tail = done.future;
+    return (() async {
+      try {
+        if (previous != null) await previous;
+        if (_userId != account) throw StateError('Phiên đăng nhập đã thay đổi.');
+        final value = await operation();
+        if (_userId != account) throw StateError('Phiên đăng nhập đã thay đổi.');
+        return value;
+      } finally {
+        // Release the queue before returning, and do not retain an idle Future
+        // from a previous HTTP/test zone. The next operation receives no error.
+        if (identical(_tail, done.future)) _tail = null;
+        done.complete();
+      }
+    })();
   }
 
   static Future<PersonalizationListResult> loadFavorites() =>
@@ -572,7 +581,7 @@ class PersonalizationService {
     history.insert(0, localRow);
 
     final outbox = await _readOutbox(userId, 'visits');
-    if (!outbox.any((event) => event['clientEventId'] == eventId))
+    if (!outbox.any((event) => event['clientEventId'] == eventId)) {
       outbox.add({
         'clientEventId': eventId,
         'artifactId': artifactId,
@@ -581,6 +590,7 @@ class PersonalizationService {
         'source': source,
         '_local': localRow,
       });
+    }
     // Persist delivery intent before the display cache and before any network I/O.
     await _writeOutbox(userId, 'visits', outbox);
     await _writeCache(userId, 'history', history);
@@ -674,8 +684,9 @@ class PersonalizationService {
             .toList();
         final history = await _readLocalHistory(userId);
         for (final row in history) {
-          if (accepted.contains(row['clientEventId']?.toString()))
+          if (accepted.contains(row['clientEventId']?.toString())) {
             row['syncPending'] = false;
+          }
         }
         await _writeCache(userId, 'history', history);
         await _writeOutbox(userId, 'visits', remaining);

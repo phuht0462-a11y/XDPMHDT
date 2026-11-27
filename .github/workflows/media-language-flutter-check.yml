@@ -56,6 +56,10 @@ jobs:
             }
             Write-Host "PowerShell 5.1 syntax OK: $name"
           }
+      - name: Test nested media URL JSON on Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File "Infra/seed/repair-demo-media.ps1" -SelfTest
 
   mysql-legacy-media-migration:
     runs-on: ubuntu-latest

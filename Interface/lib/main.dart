@@ -13,6 +13,7 @@ import 'features/beacon/beacon_service.dart';
 import 'features/notify/device_registration_service.dart';
 import 'features/heritage_sites/map_screen.dart'; // Ân W5
 import 'screens/artifact_detail_screen.dart';
+import 'screens/artifact_list_screen.dart';
 import 'screens/recent_artifacts_screen.dart';
 import 'core/media_lifecycle.dart';
 import 'shared/app_sidebar.dart';
@@ -101,6 +102,35 @@ class _HomePageState extends State<HomePage> {
       'image': '',
     },
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_loadFeaturedMedia());
+  }
+
+  /// Keep the demo cards, but take images and history metadata from the
+  /// same public API as the full artifact list. Do not rely on dead Unsplash
+  /// URLs or the empty image placeholders in the static demo fallback.
+  Future<void> _loadFeaturedMedia() async {
+    try {
+      final rows = await ArtifactListApi.fetchAll();
+      if (!mounted) return;
+      final byId = {for (final row in rows) row.id: row};
+      setState(() {
+        for (final artifact in artifacts) {
+          final id = artifact['id'];
+          final item = byId[id];
+          if (item == null) continue;
+          artifact['image'] = item.thumbnailUrl ?? '';
+          artifact['historyName'] = item.name;
+          artifact['siteName'] = item.locationName;
+        }
+      });
+    } catch (_) {
+      // Demo/offline: retain the existing cards and their placeholders.
+    }
+  }
 
   void openArtifact(Map<String, dynamic> artifact, {String source = 'MANUAL'}) {
     final id = (artifact['id'] as num).toInt();

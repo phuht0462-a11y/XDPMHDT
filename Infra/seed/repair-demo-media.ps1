@@ -12,8 +12,33 @@
 [CmdletBinding()]
 param(
     [string]$Gateway = 'http://localhost:8080',
-    [switch]$VerifyOnly
+    [switch]$VerifyOnly,
+    [switch]$SelfTest
 )
+
+# PowerShell 5.1 can wrap a JSON array inside another Object[].
+# Recursively flatten media URL lists to avoid passing Object[] into [Uri].
+function Expand-MediaUrls {
+    param([AllowNull()] [object]$Value)
+    if ($null -eq $Value) { return }
+    if ($Value -is [string]) {
+        if (-not [string]::IsNullOrWhiteSpace($Value)) { $Value.Trim() }
+    } elseif ($Value -is [System.Collections.IEnumerable]) {
+        foreach ($nested in $Value) { Expand-MediaUrls -Value $nested }
+    }
+}
+
+if ($SelfTest) {
+    $one = @(Expand-MediaUrls -Value (ConvertFrom-Json -InputObject '["http://localhost:8080/a.jpg"]'))
+    $two = @(Expand-MediaUrls -Value @(@((ConvertFrom-Json -InputObject '["http://localhost:8080/a.jpg","http://localhost:8080/b.jpg"]'))))
+    if ($one.Count -ne 1 -or $two.Count -ne 2 -or
+        $one[0] -ne 'http://localhost:8080/a.jpg' -or
+        $two[0] -notmatch '^http://' -or $two[1] -notmatch '^http://') {
+        throw 'URL array flattening self-test FAILED.'
+    }
+    Write-Host 'URL array flattening self-test PASSED.' -ForegroundColor Green
+    return
+}
 
 $ErrorActionPreference = 'Stop'
 $Gateway = $Gateway.TrimEnd('/')
@@ -115,19 +140,15 @@ try {
                         try {
                             # ConvertFrom-Json may return an Object[] even for one image.
                             # Append each URL string rather than a nested array.
-                            $decodedImages = @(ConvertFrom-Json -InputObject $rawImages)
-                            foreach ($image in $decodedImages) {
-                                if ($image -is [string] -and -not [string]::IsNullOrWhiteSpace($image)) {
-                                    $referencedUrls += $image
-                                }
+                            $decodedImages = ConvertFrom-Json -InputObject $rawImages
+                            foreach ($image in (Expand-MediaUrls -Value $decodedImages)) {
+                                $referencedUrls += [string]$image
                             }
                         }
                         catch { $failed += "Artifact $($id): invalid imageUrls JSON" }
                     } elseif ($rawImages -is [array]) {
-                        foreach ($image in $rawImages) {
-                            if ($image -is [string] -and -not [string]::IsNullOrWhiteSpace($image)) {
-                                $referencedUrls += $image
-                            }
+                        foreach ($image in (Expand-MediaUrls -Value $rawImages)) {
+                            $referencedUrls += [string]$image
                         }
                     } elseif ($rawImages -is [string] -and -not [string]::IsNullOrWhiteSpace($rawImages)) {
                         $referencedUrls += $rawImages
@@ -146,23 +167,8 @@ try {
     Write-Warning "Cannot read /api/artifacts: $($_.Exception.Message)"
 }
 
-# Explicit string conversion keeps PowerShell 5.1 from treating one-item
-# Object[] arrays as an invalid URI in the verification loop.
-$liveUrls = @(
-    $referencedUrls |
-    ForEach-Object {
-        if ($_ -is [string] -and -not [string]::IsNullOrWhiteSpace($_)) {
-            [string]$_
-        } elseif ($_ -is [array]) {
-            foreach ($nestedUrl in $_) {
-                if ($nestedUrl -is [string] -and -not [string]::IsNullOrWhiteSpace($nestedUrl)) {
-                    [string]$nestedUrl
-                }
-            }
-        }
-    } |
-    Sort-Object -Unique
-)
+# Recursively normalize even legacy nested Object[] values before HEAD checks.
+$liveUrls = @($referencedUrls | ForEach-Object { Expand-MediaUrls -Value $_ } | Sort-Object -Unique)
 Write-Host "Verifying media URLs referenced by live database: $($liveUrls.Count)"
 foreach ($url in $liveUrls) {
     try {

@@ -69,7 +69,7 @@ jobs:
           docker run -d --name sh-migration-test -e MYSQL_ROOT_PASSWORD=ci-test-only mysql:8.0
           ready=0
           for i in $(seq 1 60); do
-            if docker exec -e MYSQL_PWD=ci-test-only sh-migration-test mysqladmin ping -uroot --silent >/dev/null 2>&1; then ready=1; break; fi
+            if docker exec -e MYSQL_PWD=ci-test-only sh-migration-test mysql -uroot -N -s -e 'SELECT 1;' >/dev/null 2>&1; then ready=1; break; fi
             sleep 2
           done
           test "$ready" = 1

@@ -2,6 +2,7 @@
 -- Does not delete artifacts, translations, users, favorites, history or uploads.
 -- Only the exact legacy example.com placeholder VIDEO row is removed.
 -- ALWAYS run via repair-legacy-demo-db.ps1, which makes a database dump first.
+USE content_db;
 SET NAMES utf8mb4;
 START TRANSACTION;
 

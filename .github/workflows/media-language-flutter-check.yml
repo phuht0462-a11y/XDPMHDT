@@ -45,10 +45,48 @@ jobs:
         run: |
           $tokens = $null
           $parseErrors = $null
-          $script = (Resolve-Path 'Infra/seed/repair-demo-media.ps1').Path
-          [void][System.Management.Automation.Language.Parser]::ParseFile($script, [ref]$tokens, [ref]$parseErrors)
-          if ($parseErrors.Count -gt 0) {
-            $parseErrors | Format-List
-            throw 'PowerShell script syntax invalid'
+          foreach ($name in @('repair-demo-media.ps1', 'repair-legacy-demo-db.ps1')) {
+            $script = (Resolve-Path "Infra/seed/$name").Path
+            $tokens = $null
+            $parseErrors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile($script, [ref]$tokens, [ref]$parseErrors)
+            if ($parseErrors.Count -gt 0) {
+              $parseErrors | Format-List
+              throw "PowerShell script syntax invalid: $name"
+            }
+            Write-Host "PowerShell 5.1 syntax OK: $name"
           }
-          Write-Host 'PowerShell 5.1 syntax OK'
+
+  mysql-legacy-media-migration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Start isolated MySQL 8.0 test database
+        run: |
+          docker run -d --name sh-migration-test -e MYSQL_ROOT_PASSWORD=ci-test-only mysql:8.0
+          ready=0
+          for i in $(seq 1 60); do
+            if docker exec -e MYSQL_PWD=ci-test-only sh-migration-test mysqladmin ping -uroot --silent >/dev/null 2>&1; then ready=1; break; fi
+            sleep 2
+          done
+          test "$ready" = 1
+      - name: Test legacy seed migration twice without deleting artifacts
+        run: |
+          docker exec -i -e MYSQL_PWD=ci-test-only sh-migration-test mysql -uroot < Infra/db/03_content.sql
+          docker exec -i -e MYSQL_PWD=ci-test-only sh-migration-test mysql -uroot < Infra/seed/repair-legacy-demo-db.sql
+          docker exec -i -e MYSQL_PWD=ci-test-only sh-migration-test mysql -uroot < Infra/seed/repair-legacy-demo-db.sql
+          rem=$(docker exec -e MYSQL_PWD=ci-test-only sh-migration-test mysql -uroot -N -s -e "SELECT (SELECT COUNT(*) FROM content_db.artifacts WHERE thumbnail_url LIKE '%example.com/%') + (SELECT COUNT(*) FROM content_db.artifact_contents WHERE audio_url LIKE '%example.com/%' OR video_url LIKE '%example.com/%' OR image_urls LIKE '%example.com/%') + (SELECT COUNT(*) FROM content_db.media_resources WHERE file_url LIKE '%example.com/%');")
+          test "$rem" = 0
+          count=$(docker exec -e MYSQL_PWD=ci-test-only sh-migration-test mysql -uroot -N -s -e "SELECT COUNT(*) FROM content_db.artifacts;")
+          test "$count" = 3
+          lang=$(docker exec -e MYSQL_PWD=ci-test-only sh-migration-test mysql -uroot -N -s -e "SELECT COUNT(*) FROM content_db.artifact_contents c JOIN content_db.artifacts a ON a.id=c.artifact_id WHERE a.artifact_code='DM-01' AND c.language_code='en';")
+          test "$lang" = 1
+          en=$(docker exec -e MYSQL_PWD=ci-test-only sh-migration-test mysql -uroot -N -s -e "SELECT COUNT(*) FROM content_db.artifact_contents WHERE language_code='en' AND audio_url LIKE 'http://localhost:8080/api/media/files/%.wav';")
+          test "$en" = 3
+          echo 'Migration idempotent, placeholder URLs cleared, English audio and translation present.'
+      - name: Remove disposable MySQL test container
+        if: always()
+        run: docker rm -f sh-migration-test || true

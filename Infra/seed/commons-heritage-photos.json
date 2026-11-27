@@ -1,0 +1,66 @@
+{
+  "description": "Real-world heritage photos verified from Wikimedia Commons. Optional supplementary media, not a substitute for uploaded demo files.",
+  "retrievedDate": "2026-11-28",
+  "photos": [
+    {
+      "code": "KVC-01",
+      "name": "Khuê Văn Các",
+      "file": "KVC-01.jpg",
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/7/77/Khu%C3%AA_v%C4%83n_c%C3%A1c.jpg",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Khu%C3%AA_v%C4%83n_c%C3%A1c.jpg",
+      "author": "Phuongcacanh",
+      "license": "Public domain (PD-user)",
+      "note": "Ảnh Khuê Văn Các bên giếng Thiên Quang"
+    },
+    {
+      "code": "BTS-01",
+      "name": "Bia Tiến sĩ",
+      "file": "BTS-01.jpg",
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/7/7f/Doctors%27_Stelae_%284856371606%29.jpg",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Doctors%27_Stelae_%284856371606%29.jpg",
+      "author": "Caitriana Nicholson",
+      "license": "CC BY-SA 2.0",
+      "note": "Bia tiến sĩ đặt trên rùa đá tại Văn Miếu"
+    },
+    {
+      "code": "DM-01",
+      "name": "Đoan Môn",
+      "file": "DM-01.jpg",
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/9/91/Doan_Mon_Gate_1.jpg",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Doan_Mon_Gate_1.jpg",
+      "author": "Christophe95",
+      "license": "CC BY-SA 4.0",
+      "note": "Cổng Đoan Môn tại Hoàng thành Thăng Long"
+    },
+    {
+      "code": "DTM-W7",
+      "name": "Đại Trung Môn",
+      "file": "DTM-W7.jpg",
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/c/ce/V%C4%83n_Mi%E1%BA%BFu%2C_%C4%90%E1%BA%A1i_trung_m%C3%B4n.jpg",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:V%C4%83n_Mi%E1%BA%BFu%2C_%C4%90%E1%BA%A1i_trung_m%C3%B4n.jpg",
+      "author": "yukop",
+      "license": "CC BY 2.0",
+      "note": "Cổng Đại Trung Môn tại Văn Miếu"
+    },
+    {
+      "code": "DKT-W7",
+      "name": "Nền điện Kính Thiên",
+      "file": "DKT-W7.jpg",
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a7/Dien_Kinh_Thien_001.jpg",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Dien_Kinh_Thien_001.jpg",
+      "author": "Charles-Édouard Hocquard",
+      "license": "Public domain mark 1.0",
+      "note": "Ảnh tư liệu điện Kính Thiên khoảng 1884–1885; không phải hiện trạng"
+    },
+    {
+      "code": "CCHN-W7",
+      "name": "Cột cờ Hà Nội",
+      "file": "CCHN-W7.jpg",
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Hanoi_Flag_Tower_%289735319302%29.jpg/960px-Hanoi_Flag_Tower_%289735319302%29.jpg",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Hanoi_Flag_Tower_(9735319302).jpg",
+      "author": "Gary Todd",
+      "license": "CC0 1.0",
+      "note": "Ảnh cột cờ Hà Nội"
+    }
+  ]
+}

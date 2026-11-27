@@ -45,7 +45,7 @@ jobs:
         run: |
           $tokens = $null
           $parseErrors = $null
-          foreach ($name in @('repair-demo-media.ps1', 'repair-legacy-demo-db.ps1')) {
+          foreach ($name in @('repair-demo-media.ps1', 'repair-legacy-demo-db.ps1', 'download-commons-photos.ps1')) {
             $script = (Resolve-Path "Infra/seed/$name").Path
             $tokens = $null
             $parseErrors = $null

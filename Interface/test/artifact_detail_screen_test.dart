@@ -294,4 +294,52 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+  testWidgets('loads extra active languages and falls back when a translation is missing',
+      (tester) async {
+    final requestedLanguages = <String>[];
+    AuthService.rawClient = MockClient((request) async {
+      if (request.url.path == '/api/languages') {
+        return http.Response(
+          jsonEncode({
+            'data': [
+              {'code': 'vi', 'name': 'Tiếng Việt', 'active': true},
+              {'code': 'en', 'name': 'English', 'active': true},
+              {'code': 'fr', 'name': 'Français', 'active': true},
+              {'code': 'de', 'name': 'Deutsch', 'active': false},
+            ],
+          }),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      }
+      if (request.url.path == '/api/artifacts/1') {
+        final lang = request.url.queryParameters['lang'] ?? 'vi';
+        requestedLanguages.add(lang);
+        final data = artifactJson(1, 'vi');
+        data['requestedLanguage'] = lang;
+        data['fallback'] = lang == 'fr';
+        return http.Response(
+          jsonEncode({'data': data}),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      }
+      return http.Response('{}', 404);
+    });
+    await tester.pumpWidget(
+      const MaterialApp(home: ArtifactDetailScreen(artifactId: 1)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Français (fr)'), findsOneWidget);
+    expect(find.text('Deutsch (de)'), findsNothing);
+    await tester.tap(find.text('Français (fr)'));
+    await tester.pumpAndSettle();
+    expect(requestedLanguages, contains('fr'));
+    expect(
+      find.text('Chưa có bản dịch, đang hiển thị tiếng Việt'),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
 }

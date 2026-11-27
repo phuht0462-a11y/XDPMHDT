@@ -50,8 +50,11 @@ class ArtifactContentItem {
     );
   }
 
-  String get languageLabel =>
-      languageCode == 'vi' ? '🇻🇳 Tiếng Việt' : '🇬🇧 English';
+  String get languageLabel {
+    if (languageCode == 'vi') return '🇻🇳 Tiếng Việt';
+    if (languageCode == 'en') return '🇬🇧 English';
+    return languageCode.toUpperCase();
+  }
 }
 
 class ArtifactDetail {

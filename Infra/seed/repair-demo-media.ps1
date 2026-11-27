@@ -91,7 +91,12 @@ try {
     if ($artifacts.Count -ne 6) {
         Write-Warning 'Demo seed expects 6 artifacts. Existing MySQL volume may predate 09_demo_seed.sql; do not reset it.'
     }
-    foreach ($id in 1..6) {
+    foreach ($artifact in $artifacts) {
+        $id = $artifact.id
+        if ($null -eq $id) {
+            Write-Warning 'An artifact in /api/artifacts has no id; skipping detail check.'
+            continue
+        }
         try {
             $vi = Invoke-RestMethod -Uri "$Gateway/api/artifacts/$($id)?lang=vi" -TimeoutSec 15
             $en = Invoke-RestMethod -Uri "$Gateway/api/artifacts/$($id)?lang=en" -TimeoutSec 15
@@ -107,9 +112,24 @@ try {
                     if ($detail.content.videoUrl) { $referencedUrls += [string]$detail.content.videoUrl }
                     $rawImages = $detail.content.imageUrls
                     if ($rawImages -is [string] -and $rawImages.Trim().StartsWith('[')) {
-                        try { $referencedUrls += @(ConvertFrom-Json -InputObject $rawImages) }
+                        try {
+                            # ConvertFrom-Json may return an Object[] even for one image.
+                            # Append each URL string rather than a nested array.
+                            $decodedImages = @(ConvertFrom-Json -InputObject $rawImages)
+                            foreach ($image in $decodedImages) {
+                                if ($image -is [string] -and -not [string]::IsNullOrWhiteSpace($image)) {
+                                    $referencedUrls += $image
+                                }
+                            }
+                        }
                         catch { $failed += "Artifact $($id): invalid imageUrls JSON" }
                     } elseif ($rawImages -is [array]) {
+                        foreach ($image in $rawImages) {
+                            if ($image -is [string] -and -not [string]::IsNullOrWhiteSpace($image)) {
+                                $referencedUrls += $image
+                            }
+                        }
+                    } elseif ($rawImages -is [string] -and -not [string]::IsNullOrWhiteSpace($rawImages)) {
                         $referencedUrls += $rawImages
                     }
                 }
@@ -126,7 +146,23 @@ try {
     Write-Warning "Cannot read /api/artifacts: $($_.Exception.Message)"
 }
 
-$liveUrls = @($referencedUrls | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } | Sort-Object -Unique)
+# Explicit string conversion keeps PowerShell 5.1 from treating one-item
+# Object[] arrays as an invalid URI in the verification loop.
+$liveUrls = @(
+    $referencedUrls |
+    ForEach-Object {
+        if ($_ -is [string] -and -not [string]::IsNullOrWhiteSpace($_)) {
+            [string]$_
+        } elseif ($_ -is [array]) {
+            foreach ($nestedUrl in $_) {
+                if ($nestedUrl -is [string] -and -not [string]::IsNullOrWhiteSpace($nestedUrl)) {
+                    [string]$nestedUrl
+                }
+            }
+        }
+    } |
+    Sort-Object -Unique
+)
 Write-Host "Verifying media URLs referenced by live database: $($liveUrls.Count)"
 foreach ($url in $liveUrls) {
     try {

@@ -83,6 +83,7 @@ try {
     Write-Warning "Cannot read /api/languages: $($_.Exception.Message)"
 }
 
+$referencedUrls = @()
 try {
     $artifactResult = Invoke-RestMethod -Uri "$Gateway/api/artifacts" -TimeoutSec 15
     $artifacts = @($artifactResult.data)
@@ -98,6 +99,24 @@ try {
             $enText = [bool]$en.data.content
             $enAudio = -not [string]::IsNullOrWhiteSpace([string]$en.data.content.audioUrl)
             Write-Host "Artifact $($id): vi text=$viText, en text=$enText, en audio URL=$enAudio, en fallback=$($en.data.fallback)"
+            foreach ($detail in @($vi.data, $en.data)) {
+                if (-not $detail) { continue }
+                if ($detail.thumbnailUrl) { $referencedUrls += [string]$detail.thumbnailUrl }
+                if ($detail.content) {
+                    if ($detail.content.audioUrl) { $referencedUrls += [string]$detail.content.audioUrl }
+                    if ($detail.content.videoUrl) { $referencedUrls += [string]$detail.content.videoUrl }
+                    $rawImages = $detail.content.imageUrls
+                    if ($rawImages -is [string] -and $rawImages.Trim().StartsWith('[')) {
+                        try { $referencedUrls += @(ConvertFrom-Json -InputObject $rawImages) }
+                        catch { $failed += "Artifact $($id): invalid imageUrls JSON" }
+                    } elseif ($rawImages -is [array]) {
+                        $referencedUrls += $rawImages
+                    }
+                }
+                foreach ($asset in @($detail.media)) {
+                    if ($asset -and $asset.fileUrl) { $referencedUrls += [string]$asset.fileUrl }
+                }
+            }
         } catch {
             Write-Warning "Artifact $($id): cannot check translations ($($_.Exception.Message))"
         }
@@ -105,6 +124,21 @@ try {
     Write-Host 'Note: checked-in demo includes EN audio only. VI audio is not part of the supplied seed.'
 } catch {
     Write-Warning "Cannot read /api/artifacts: $($_.Exception.Message)"
+}
+
+$liveUrls = @($referencedUrls | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } | Sort-Object -Unique)
+Write-Host "Verifying media URLs referenced by live database: $($liveUrls.Count)"
+foreach ($url in $liveUrls) {
+    try {
+        $uri = [Uri]$url
+        if ($uri.Scheme -notin @('http', 'https')) { throw 'URL scheme is not http(s)' }
+        $response = Invoke-WebRequest -Uri $url -Method Head -UseBasicParsing -TimeoutSec 15
+        if ($response.StatusCode -ne 200) {
+            $failed += "DB URL HTTP $($response.StatusCode): $url"
+        }
+    } catch {
+        $failed += "DB URL unreachable: $url ($($_.Exception.Message))"
+    }
 }
 
 if ($failed.Count -gt 0) {

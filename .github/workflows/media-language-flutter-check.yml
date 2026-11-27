@@ -32,3 +32,23 @@ jobs:
       - name: Flutter analyzer (existing repository lint tracked separately)
         continue-on-error: true
         run: flutter analyze
+
+  powershell-syntax:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Parse demo media repair on Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          $script = (Resolve-Path 'Infra/seed/repair-demo-media.ps1').Path
+          [void][System.Management.Automation.Language.Parser]::ParseFile($script, [ref]$tokens, [ref]$parseErrors)
+          if ($parseErrors.Count -gt 0) {
+            $parseErrors | Format-List
+            throw 'PowerShell script syntax invalid'
+          }
+          Write-Host 'PowerShell 5.1 syntax OK'
